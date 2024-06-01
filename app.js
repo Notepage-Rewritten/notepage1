@@ -1,9 +1,9 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow,ipcMain, dialog} = require('electron');
+const {app, BrowserWindow ,ipcMain, dialog} = require('electron');
 //const client = require('discord-rich-presence')('583732487189037058');
 
 const log = require('electron-log');
-// const {autoUpdater} = require("electron-updater");
+const {autoUpdater} = require("electron-updater");
 var ipc = require('ipc');
 
 const fs = require('fs');
@@ -11,45 +11,27 @@ const OSname = require("os").userInfo().username;
 const os = require("os");
 const homedir = require('os').homedir();
 
+console.log("homepath: " + homedir);
+log.info(homedir);
 const package = require('./package.json');
 const projName = package.name;
 const platform = process.platform;
 
 const dir = require('./utils/path');
+const { settings } = require('cluster');
 
 let path = dir.getHomepath(platform, projName, OSname, homedir);
-let settings  = dir.getSettings(fs, path);
+try {
+    let settings  = dir.getSettings(fs, path);
+} catch (error) {
+    console.log("An error occured: " + error);
+    let settings = {
+        enablePatch: false,
+        files: [`${path}`]
+    };
+}
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-/**let file = "";
-
-if(file == ""){
-    client.updatePresence({
-        details: `NP-DEV (DEV-CLIENT)`,
-        largeImageKey: 'notepad-512',
-        instance: true,
-    });
-}
-
-ipcMain.on('opened', (event, args) => {
-    console.log(args);
-    if(args != ""){
-        //Definition of Richpresence
-        client.updatePresence({
-            details: `Editing: ${args}`,
-            largeImageKey: 'notepad-512',
-            startTimestamp: Date.now(),
-            endTimesttam: Date.now+1,
-            instance: true,
-        });
-    }else{
-        client.updatePresence({
-            details: `idling`,
-            largeImageKey: 'notepad-512',
-            instance: true,
-        });
-    }
-});*/
 
 // Detects when .npage files ask application to open
 ipcMain.on('get-file-data', function(event) {
@@ -70,6 +52,12 @@ ipcMain.on('get-file-data', function(event) {
     
 });
 
+settings.files.forEach(e => {
+    fs.readdir(`${e}/files`, function(err, items) { 
+        console.log(items);
+    });       
+});   
+
 function createWindow () {
     let mainWindow, splash = null;
 
@@ -82,7 +70,9 @@ function createWindow () {
         backgroundColor:"#46cfa8",
         allowRendererProcessReuse: true,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true,
+            contextIsolation: false
         }
     });
 
@@ -96,7 +86,9 @@ function createWindow () {
         resizable:false,
         alwaysOnTop:true,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true,
+            contextIsolation: false
         }
     });
 
@@ -141,20 +133,20 @@ function createWindow () {
  * Repo gets read from package.json
  */
 
-/* autoUpdater.logger = log;
-autoUpdater.logger.transports.file.level = 'info'; */
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 log.info('App starting...');
 log.info(__dirname);
 
 function sendStatusToWindow(text) {
     log.info(text);
-    ipcMain.on('message', function (event, text) {
+    ipcMain.on('message', (event, text) => {
         addItem(args); // we don't care process
         event.sender.send("message", text);
     })
 }
 
-/* autoUpdater.on('checking-for-update', () => {
+autoUpdater.on('checking-for-update', () => {
     sendStatusToWindow('Checking for update...');
 });
 
@@ -186,13 +178,13 @@ autoUpdater.on('update-downloaded', () => {
     // Patch Toggler
     autoUpdater.quitAndInstall();
 });
- */
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () =>{
     console.log("enablePatch" + typeof(settings.enablePatch) + "value: " + settings.enablePatch);
-/*     if(typeof(settings.enablePatch) === undefined){
+    if(typeof(settings.enablePatch) === undefined){
         autoUpdater.checkForUpdates();
         console.log('run');
     }else{
@@ -200,7 +192,7 @@ app.on('ready', () =>{
             autoUpdater.checkForUpdates();
             console.log('run');
         }
-    } */
+    }
     createWindow();
 })
 
@@ -224,3 +216,40 @@ app.on('activate', function () {
 
 //Removes version.json after having read the Changelog
 ipcMain.on("SetReadFalse",() =>{ fs.unlinkSync(`C:/Users/${OSname}/Documents/${projName}/data/version.json`); });
+
+// Main proccess listener interface
+ipcMain.on("fileSafe", () => {
+    // TODO: store file
+    // TODO: message render proccess about status
+});
+
+ipcMain.on("getFiles", (event) => {
+    // TODO: lookup directories set
+    // TODO: send array of fiels to render proccess
+    settings.files.forEach(e => {
+        fs.readdir(`${e}/files`, function(err, items) { 
+            console.log(items);
+        });       
+    });   
+});
+
+ipcMain.on("pdfExport", () => {    
+    // TODO: export file
+    // TODO: message render proccess about status
+});
+
+ipcMain.on("checkLibs", () => {
+    // TODO: check for needed external libs
+    // TODO: download libs when needed
+})
+
+ipcMain.on("settingLookup", (event) => {
+    // TODO: lookup settings.json
+    // TODO: Send settings to renderprocess
+    event.sender.send("settingReply", settings);
+})
+
+ipcMain.on("settingChange", () => {
+    // TODO: change settings.json
+    // TODO: message render proccess about stauts
+});

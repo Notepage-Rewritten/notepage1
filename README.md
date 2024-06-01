@@ -1,5 +1,4 @@
-this is an old mostly broken version of notepage v1
-keep in mind this is only posted as a reference on how v2 might look and features it can take over from v1
+this is the last ever  functional version of notepage
+keep in mind this is only as reference for how the project started and what features notepage V2 can implement
 
-another reason for it beeing uploaded is to keep a historical reference to how notepage started for anyone who is interessted
-if someone want he could try to bringt this version back up and running but no support should be expected
+this version will never be continued and no bugs reported will be resolved use it at own risk.
